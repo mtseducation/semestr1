@@ -5,12 +5,20 @@ import org.example.domain.Article.ArticleId;
 import org.example.domain.ArticleWithCommentCount;
 import org.example.domain.Comment;
 import org.example.domain.Comment.CommentId;
+import org.example.domain.exception.AddCommentToArticleException;
+import org.example.domain.exception.AllArticlesWithCommentException;
+import org.example.domain.exception.ArticleCreateException;
+import org.example.domain.exception.ArticleWithCommentsException;
+import org.example.domain.exception.DeleteArticleException;
+import org.example.domain.exception.UpdateArticleException;
 import org.example.repository.ArticleRepository;
 import org.example.repository.CommentRepository;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptyList;
 
 public class ArticleService {
     private final ArticleRepository articleRepository;
@@ -23,62 +31,88 @@ public class ArticleService {
 
     public List<Article> getAllArticlesWithComments() {
         List<Article> articles = articleRepository.getAllArticles();
-        for (Article article : articles) {
-            List<Comment> comments = commentRepository.getCommentsByArticleId(article.getArticleId());
-            article.setCommentList(comments);
+        if (articles != null) {
+            for (Article article : articles) {
+                List<Comment> comments = commentRepository.getCommentsByArticleId(article.getArticleId());
+                article.setCommentList(comments);
+            }
+            return articles;
+        } else {
+            throw new AllArticlesWithCommentException("Cannot find any articles");
         }
-        return articles;
     }
 
     public List<ArticleWithCommentCount> getAllArticlesWithCommentCount() {
         List<Article> articles = articleRepository.getAllArticles();
-        return articles.stream()
-                   .map(article -> new ArticleWithCommentCount(article, commentRepository.getCommentCountByArticleId(article.getArticleId())))
-                   .collect(Collectors.toList());
-    }
-
-    public Article getArticleWithComments(long articleId) {
-        final var article = articleRepository.getArticleById(new ArticleId(articleId));
-        if (article != null) {
-            List<Comment> comments = commentRepository.getCommentsByArticleId(article.getArticleId());
-            article.setCommentList(comments);
+        if (articles != null) {
+            return articles.stream()
+                       .map(article -> new ArticleWithCommentCount(
+                           article,
+                           commentRepository.getCommentCountByArticleId(article.getArticleId())))
+                       .collect(Collectors.toList());
+        } else {
+            throw new AllArticlesWithCommentException("Cannot find all article");
         }
-        return article;
     }
 
-    public Article updateArticle(long articleId, Article updatedArticle) {
-        final var existingArticle = articleRepository.getArticleById(new ArticleId(articleId));
-        if (existingArticle != null) {
-            existingArticle.setTitle(updatedArticle.getTitle());
-            existingArticle.setTags(updatedArticle.getTags());
-            articleRepository.updateArticle(existingArticle.getArticleId(), existingArticle);
-        }
-        return existingArticle;
+    public Article getArticleById(ArticleId articleId) {
+        return articleRepository.getArticleById(articleId);
     }
 
-    public void deleteArticle(long articleId) {
-        articleRepository.deleteArticle(new ArticleId(articleId));
-    }
-
-    public Article addArticle(Article newArticle) {
-        final var articleId = new ArticleId(System.currentTimeMillis());
-        newArticle.setArticleId(articleId);
-        articleRepository.addArticle(newArticle);
-        return newArticle;
-    }
-
-    public Comment addCommentToArticle(long articleId, Comment newComment) {
-        final var article = articleRepository.getArticleById(new ArticleId(articleId));
+    public List<Comment> getArticleWithComments(ArticleId articleId) {
+        final var article = articleRepository.getArticleById(articleId);
         if (article != null) {
+            return commentRepository.getCommentsByArticleId(article.getArticleId());
+        } else {
+            throw new ArticleWithCommentsException("Cannot find article by id");
+        }
+    }
+
+    public Article updateArticle(ArticleId articleId, String title, Set<String> tags) {
+        final var existingArticle = articleRepository.getArticleById(articleId);
+        try {
+            existingArticle.setTitle(title);
+            existingArticle.setTags(tags);
+            articleRepository.updateArticle(existingArticle);
+            return existingArticle;
+        } catch (UpdateArticleException e) {
+            throw new UpdateArticleException("Cannot find article by id", e.getCause());
+        }
+    }
+
+    public void deleteArticle(ArticleId articleId) {
+        try {
+            articleRepository.deleteArticle(articleId);
+        } catch (DeleteArticleException e) {
+            throw new DeleteArticleException("Cannot find article by id", e.getCause());
+        }
+    }
+
+    public ArticleId createArticle(String title, Set<String> tags) {
+        try {
+            final var articleId = new ArticleId(System.currentTimeMillis());
+            final var article = new Article(articleId, title, tags, emptyList());
+            articleRepository.createArticle(article);
+            return articleId;
+        } catch (ArticleCreateException e) {
+            throw new ArticleCreateException("Cannon create article", e.getCause());
+        }
+    }
+
+    public CommentId addCommentToArticle(ArticleId articleId, String text) {
+        try {
             final var commentId = new CommentId(System.currentTimeMillis());
-            newComment.setCommentId(commentId);
-            newComment.setArticleId(article.getArticleId());
-            commentRepository.addComment(newComment);
+            final var comment = new Comment(commentId, articleId, text);
+            commentRepository.addComment(comment);
+            final var article = articleRepository.getArticleById(articleId);
+            article.setCommentList(List.of(comment));
+            return commentId;
+        } catch (ArticleCreateException exception) {
+            throw new AddCommentToArticleException("Cannot find article by id", exception.getCause());
         }
-        return newComment;
     }
 
-    public void deleteCommentFromArticle(long articleId, long commentId) {
-        commentRepository.deleteComment(new CommentId(commentId));
+    public void deleteCommentFromArticle(ArticleId articleId, CommentId commentId) {
+        commentRepository.deleteCommentByArticleId(articleId, commentId);
     }
 }

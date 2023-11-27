@@ -1,12 +1,14 @@
 package org.example.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.example.domain.Article.ArticleId;
 
 import java.util.Objects;
 
 public class Comment {
-    private CommentId commentId;
-    private ArticleId articleId;
+    private final CommentId commentId;
+    private final ArticleId articleId;
     private String text;
 
     public Comment(CommentId commentId, ArticleId articleId, String text) {
@@ -27,14 +29,6 @@ public class Comment {
         return text;
     }
 
-    public void setArticleId(ArticleId articleId) {
-        this.articleId = articleId;
-    }
-
-    public void setCommentId(CommentId commentId) {
-        this.commentId = commentId;
-    }
-
     public void setText(String text) {
         this.text = text;
     }
@@ -42,10 +36,12 @@ public class Comment {
     public static class CommentId {
         private final long id;
 
+        @JsonCreator
         public CommentId(long id) {
             this.id = id;
         }
 
+        @JsonValue
         public long value() {
             return id;
         }

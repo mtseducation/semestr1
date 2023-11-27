@@ -1,22 +1,33 @@
 package controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.Application;
 import org.example.controller.ArticleController;
+import org.example.controller.response.ArticleCreateResponse;
 import org.example.domain.Article;
 import org.example.domain.Comment;
+import org.example.repository.ArticleRepository;
+import org.example.repository.InMemoryArticleRepository;
+import org.example.repository.InMemoryCommentRepository;
 import org.example.service.ArticleService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.exceptions.base.MockitoException;
 import spark.Service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,39 +47,92 @@ class ArticleControllerE2ETest {
     }
 
     @Test
-    void shouldItWork() throws Exception {
+    void shouldCreateArticle() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
         final var articleService = Mockito.mock(ArticleService.class);
         Application application = new Application(
             List.of(
                 new ArticleController(
                     service,
-                    articleService
-                )
+                    articleService,
+                    objectMapper)
             )
         );
-        final var articleId = new Article.ArticleId(System.currentTimeMillis());
-        final var commentId = new Comment.CommentId(System.currentTimeMillis());
-        final var articleJson = """
-            {
-                "articleId": %s,
-                "title": "new title",
-                "tags": ["#title", "#new"],
-                "commentList": [
-                    {"commentId": %s, "articleId": %s, "text": "my comment"},
-                    {"commentId": %s, "articleId": %s, "text": "one more comment"}
-                ]
-            }
-        """.formatted(articleId, commentId, articleId, commentId, articleId);
+        final var articleId = new Article.ArticleId(12L);
+        Mockito.when(articleService.createArticle("New Title", Set.of("my_first_tag", "my_first_test_tsg")))
+            .thenReturn(articleId);
+        application.start();
+        service.awaitInitialization();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                                  .uri(URI.create("http://localhost:%d/api/articles".formatted(service.port())))
-                                  .header("Content-Type", "application/json")
-                                  .POST(HttpRequest.BodyPublishers.ofString(articleJson))
-                                  .build();
+        // Создаем статью.
+        HttpResponse<String> responseCreateArticle = HttpClient.newHttpClient()
+                                                         .send(
+                                                             HttpRequest.newBuilder()
+                                                                 .POST(HttpRequest.BodyPublishers.ofString(
+                                                                     """
+                                                                         {
+                                                                           "title": "New Title",
+                                                                           "tags": ["my_first_tag", "my_first_test_tsg"]
+                                                                         }
+                                                                         """
+                                                                 ))
+                                                                 .uri(URI.create("http://localhost:%d/api/articles".formatted(service.port())))
+                                                                 .header("Content-Type", "application/json")
+                                                                 .build(),
+                                                             HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+                                                         );
+        // проверка что статья создалась
+        assertEquals(201, responseCreateArticle.statusCode());
+        ArticleCreateResponse articleCreateResponse = objectMapper.readValue(
+            responseCreateArticle.body(),
+            ArticleCreateResponse.class
+        );
+        assertEquals(articleId.value(), articleCreateResponse.id().value());
+    }
 
-        HttpResponse<String> response = HttpClient.newHttpClient()
-                                            .send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    @Test
+    void shouldAddComment() throws IOException, InterruptedException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        final var articleRep = Mockito.mock(InMemoryArticleRepository.class);
+        final var commentRep = Mockito.mock(InMemoryCommentRepository.class);
+//        final var articleService = Mockito.mock(ArticleService.class);
+        final var articleService = new ArticleService(articleRep, commentRep);
+        Application application = new Application(
+            List.of(
+                new ArticleController(
+                    service,
+                    articleService,
+                    objectMapper)
+            )
+        );
+        final var articleId = new Article.ArticleId(12L);
+        articleService.createArticle("New Title", Set.of("my_first_tag", "my_first_test_tsg"));
+        final var commentId = new Comment.CommentId(13L);
+        Mockito.when(articleService.addCommentToArticle(articleId, "my first comment")).thenReturn(commentId);
+//        Mockito.doNothing().when(articleService).addCommentToArticle(articleId, "my first comment");
+        application.start();
+        service.awaitInitialization();
 
-        assertEquals(200, response.statusCode());
+
+        // Добавляем в нее комментарий.
+        final var requestBodyForAddComment = String.format(
+            """
+                {
+                  "articleId": "%d",
+                  "text": "my first comment"
+                }
+                """, articleId.value()
+        );
+        HttpResponse<String> responseAddCommentToArticle =
+            HttpClient.newHttpClient()
+                .send(
+                    HttpRequest.newBuilder()
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBodyForAddComment))
+                        .uri(URI.create("http://localhost:%d/api/articles/:%d/comments".formatted(service.port(), articleId.value())))
+                        .header("Content-Type", "application/json")
+                        .build(),
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+                );
+        assertEquals(201, responseAddCommentToArticle.statusCode());
     }
 }

@@ -1,12 +1,15 @@
 package org.example.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.util.List;
 import java.util.Set;
 import java.util.Objects;
 
 
 public class Article {
-    private ArticleId articleId;
+    private final ArticleId articleId;
     private String title;
     private Set<String> tags;
     private List<Comment> commentList;
@@ -22,8 +25,8 @@ public class Article {
         return articleId;
     }
 
-    public void setArticleId(ArticleId articleId) {
-        this.articleId = articleId;
+    public List<Comment> getCommentList() {
+        return commentList;
     }
 
     public void setCommentList(List<Comment> commentList) {
@@ -46,13 +49,31 @@ public class Article {
         this.tags = tags;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Article article)) {
+            return false;
+        }
+        return articleId.equals(article.articleId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(articleId);
+    }
+
     public static class ArticleId {
         private final long id;
 
+        @JsonCreator
         public ArticleId(long id) {
             this.id = id;
         }
 
+        @JsonValue
         public long value() {
             return id;
         }
@@ -61,22 +82,5 @@ public class Article {
         public String toString() {
             return String.valueOf(id);
         }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Article article = (Article) o;
-        return articleId == article.articleId;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(articleId);
     }
 }
