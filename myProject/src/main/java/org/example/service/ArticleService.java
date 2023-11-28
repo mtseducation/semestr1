@@ -1,5 +1,6 @@
 package org.example.service;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import org.example.domain.Article;
 import org.example.domain.Article.ArticleId;
 import org.example.domain.ArticleWithCommentCount;

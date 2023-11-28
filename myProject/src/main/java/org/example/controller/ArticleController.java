@@ -12,6 +12,7 @@ import org.example.controller.response.ArticleCreateResponse;
 import org.example.controller.response.ArticleResponse;
 import org.example.controller.response.ArticleWithCommentsResponse;
 import org.example.controller.response.ErrorResponse;
+import org.example.domain.Article;
 import org.example.domain.exception.AddCommentToArticleException;
 import org.example.domain.exception.AllArticlesWithCommentException;
 import org.example.domain.exception.ArticleCreateException;
@@ -63,12 +64,12 @@ public class ArticleController implements Controller {
     }
 
     private void articleWithComments() {
-        service.get("/api/articles/:id", (req, res) -> {
+        service.get("/api/articles/:articleId", (req, res) -> {
             res.type("application/json");
-            ArticleRequest articleRequest = objectMapper.readValue(req.body(), ArticleRequest.class);
+            final var articleId = new Article.ArticleId(Long.parseLong(req.params("articleId")));
             try {
-                final var article = articleService.getArticleById(articleRequest.articleId());
-                final var articleWithComments = articleService.getArticleWithComments(articleRequest.articleId());
+                final var article = articleService.getArticleById(articleId);
+                final var articleWithComments = articleService.getArticleWithComments(articleId);
                 res.status(201);
                 return objectMapper.writeValueAsString(
                     new ArticleWithCommentsResponse(
@@ -84,7 +85,7 @@ public class ArticleController implements Controller {
     }
 
     private void updateArticle() {
-        service.put("/api/articles/:id", (req, res) -> {
+        service.put("/api/articles/:articleId", (req, res) -> {
             res.type("application/json");
             UpdateArticleRequest updateArticleRequest = objectMapper.readValue(req.body(), UpdateArticleRequest.class);
             try {
@@ -108,7 +109,7 @@ public class ArticleController implements Controller {
     }
 
     private void deleteArticle() {
-        service.delete("/api/articles/:id", (req, res) -> {
+        service.delete("/api/articles/:articleId", (req, res) -> {
             res.type("application/json");
             DeleteArticleRequest deleteArticleRequest = objectMapper.readValue(req.body(), DeleteArticleRequest.class);
             try {
@@ -144,7 +145,7 @@ public class ArticleController implements Controller {
     }
 
     private void addCommentToArticle() {
-        service.post("/api/articles/:id/comments", (req, res) -> {
+        service.post("/api/articles/:articleId/comments", (req, res) -> {
             res.type("application/json");
             AddCommentToArticleRequest articleRequest = objectMapper.readValue(req.body(), AddCommentToArticleRequest.class);
             try {
