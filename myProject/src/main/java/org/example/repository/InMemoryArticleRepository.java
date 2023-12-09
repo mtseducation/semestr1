@@ -11,10 +11,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class InMemoryArticleRepository implements ArticleRepository {
     private static final Logger LOG = LoggerFactory.getLogger(InMemoryArticleRepository.class);
+    private final AtomicLong nextId = new AtomicLong(0);
     private final Map<Article.ArticleId, Article> articlesMap = new ConcurrentHashMap<>();
+
+    @Override
+    public long generateId() {
+        return nextId.incrementAndGet();
+    }
 
     @Override
     public synchronized void createArticle(Article article) {
@@ -26,7 +33,7 @@ public class InMemoryArticleRepository implements ArticleRepository {
     }
 
     @Override
-    public Article getArticleById(Article.ArticleId articleId) {
+    public Article findArticleById(Article.ArticleId articleId) {
         final var article = articlesMap.get(articleId);
         if (article == null) {
             throw new ArticleCreateException("Cannot find article by id=" + articleId);
@@ -36,7 +43,7 @@ public class InMemoryArticleRepository implements ArticleRepository {
     }
 
     @Override
-    public List<Article> getAllArticles() {
+    public List<Article> findAllArticles() {
         return new ArrayList<>(articlesMap.values());
     }
 

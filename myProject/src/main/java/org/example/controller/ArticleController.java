@@ -3,7 +3,6 @@ package org.example.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.controller.request.AddCommentToArticleRequest;
 import org.example.controller.request.ArticleCreateRequest;
-import org.example.controller.request.ArticleRequest;
 import org.example.controller.request.DeleteArticleRequest;
 import org.example.controller.request.DeleteCommentRequest;
 import org.example.controller.request.UpdateArticleRequest;
@@ -13,6 +12,7 @@ import org.example.controller.response.ArticleResponse;
 import org.example.controller.response.ArticleWithCommentsResponse;
 import org.example.controller.response.ErrorResponse;
 import org.example.domain.Article;
+import org.example.domain.Comment;
 import org.example.domain.exception.AddCommentToArticleException;
 import org.example.domain.exception.AllArticlesWithCommentException;
 import org.example.domain.exception.ArticleCreateException;
@@ -52,7 +52,7 @@ public class ArticleController implements Controller {
         service.get("/api/articles", (req, res) -> {
             res.type("application/json");
             try {
-                final var articlesWithComments = articleService.getAllArticlesWithComments();
+                final var articlesWithComments = articleService.findAllArticlesWithComments();
                 res.status(201);
                 return objectMapper.writeValueAsString(new AllArticlesWithCommentResponse(articlesWithComments));
             } catch (AllArticlesWithCommentException e) {
@@ -68,8 +68,8 @@ public class ArticleController implements Controller {
             res.type("application/json");
             final var articleId = new Article.ArticleId(Long.parseLong(req.params("articleId")));
             try {
-                final var article = articleService.getArticleById(articleId);
-                final var articleWithComments = articleService.getArticleWithComments(articleId);
+                final var article = articleService.findArticleById(articleId);
+                final var articleWithComments = articleService.findArticleWithComments(articleId);
                 res.status(201);
                 return objectMapper.writeValueAsString(
                     new ArticleWithCommentsResponse(
@@ -149,10 +149,10 @@ public class ArticleController implements Controller {
             res.type("application/json");
             AddCommentToArticleRequest articleRequest = objectMapper.readValue(req.body(), AddCommentToArticleRequest.class);
             try {
-                articleService.addCommentToArticle(articleRequest.articleId(), articleRequest.text());
+                articleService.createCommentToArticle(articleRequest.articleId(), articleRequest.text());
                 res.status(201);
-                final var article = articleService.getArticleById(articleRequest.articleId());
-                final var articleWithComments = articleService.getArticleWithComments(articleRequest.articleId());
+                final var article = articleService.findArticleById(articleRequest.articleId());
+                final var articleWithComments = articleService.findArticleWithComments(articleRequest.articleId());
                 return objectMapper.writeValueAsString(
                     new ArticleWithCommentsResponse(
                         article.getTitle(),
@@ -170,15 +170,17 @@ public class ArticleController implements Controller {
     private void deleteComment() {
         service.delete("/api/articles/:articleId/comments/:commentId", (req, res) -> {
             res.type("application/json");
-            DeleteCommentRequest deleteCommentRequest = objectMapper.readValue(req.body(), DeleteCommentRequest.class);
+            String articleIdParam = req.params(":articleId");
+            String commentIdParam = req.params(":commentId");
+            final var articleId = new Article.ArticleId(Long.parseLong(articleIdParam));
             try {
                 articleService.deleteCommentFromArticle(
-                    deleteCommentRequest.articleId(),
-                    deleteCommentRequest.commentId()
+                    articleId,
+                    new Comment.CommentId(Long.parseLong(commentIdParam))
                 );
                 res.status(201);
                 LOG.warn("Comment deleted");
-                return objectMapper.writeValueAsString(new ArticleCreateResponse(deleteCommentRequest.articleId()));
+                return objectMapper.writeValueAsString(new ArticleCreateResponse(articleId));
             } catch (DeleteCommentException exception) {
                 LOG.warn("Cannot deleted comment");
                 res.status(400);

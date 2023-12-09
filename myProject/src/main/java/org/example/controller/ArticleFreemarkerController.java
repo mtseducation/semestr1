@@ -27,7 +27,7 @@ public class ArticleFreemarkerController implements Controller {
 
     private void getAllArticlesAndComments() {
         service.get("/api/articles-html", (req, res) -> {
-            final var articles = articleService.getAllArticlesWithCommentCount();
+            final var articles = articleService.findAllArticlesWithCommentCount();
             Map<String, Object> model = new HashMap<>();
             model.put("articles", articles);
             return new ModelAndView(model, "templates/Article.ftl");

@@ -21,6 +21,10 @@ public class Article {
         this.commentList = commentList;
     }
 
+    public Article withTitle(String title) {
+        return new Article(this.articleId, title, this.tags, this.commentList);
+    }
+
     public ArticleId getArticleId() {
         return articleId;
     }
@@ -81,6 +85,20 @@ public class Article {
         @Override
         public String toString() {
             return String.valueOf(id);
+        }
+
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            ArticleId articleId = (ArticleId) obj;
+            return id == articleId.id;
         }
     }
 }
