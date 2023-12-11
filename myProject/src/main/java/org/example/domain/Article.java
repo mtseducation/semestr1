@@ -13,12 +13,14 @@ public class Article {
     private String title;
     private Set<String> tags;
     private List<Comment> commentList;
+    private boolean trending;
 
     public Article(ArticleId articleId, String title, Set<String> tags, List<Comment> commentList) {
         this.articleId = articleId;
         this.title = title;
         this.tags = tags;
         this.commentList = commentList;
+        this.trending = isTrending();
     }
 
     public Article withTitle(String title) {
@@ -51,6 +53,14 @@ public class Article {
 
     public void setTags(Set<String> tags) {
         this.tags = tags;
+    }
+
+    public boolean isTrending() {
+        return trending;
+    }
+
+    public void setTrending(boolean trending) {
+        this.trending = trending;
     }
 
     @Override

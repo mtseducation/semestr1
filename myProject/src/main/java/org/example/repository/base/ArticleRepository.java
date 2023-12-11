@@ -1,4 +1,4 @@
-package org.example.repository;
+package org.example.repository.base;
 
 import org.example.domain.Article;
 
@@ -11,4 +11,5 @@ public interface ArticleRepository {
     List<Article> findAllArticles();
     void updateArticle(Article updatedArticle);
     void deleteArticle(Article.ArticleId articleId);
+    boolean isTrending(Article.ArticleId articleId);
 }

@@ -1,8 +1,8 @@
 package org.example.service;
 
+import org.example.controller.response.ArticleWithCommentCount;
 import org.example.domain.Article;
 import org.example.domain.Article.ArticleId;
-import org.example.domain.ArticleWithCommentCount;
 import org.example.domain.Comment;
 import org.example.domain.Comment.CommentId;
 import org.example.domain.exception.AddCommentToArticleException;
@@ -11,8 +11,8 @@ import org.example.domain.exception.ArticleCreateException;
 import org.example.domain.exception.ArticleWithCommentsException;
 import org.example.domain.exception.DeleteArticleException;
 import org.example.domain.exception.UpdateArticleException;
-import org.example.repository.ArticleRepository;
-import org.example.repository.CommentRepository;
+import org.example.repository.base.ArticleRepository;
+import org.example.repository.base.CommentRepository;
 
 import java.util.List;
 import java.util.Set;

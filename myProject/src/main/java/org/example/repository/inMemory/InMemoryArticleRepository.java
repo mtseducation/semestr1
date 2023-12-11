@@ -1,9 +1,10 @@
-package org.example.repository;
+package org.example.repository.inMemory;
 
 import org.example.domain.Article;
 import org.example.domain.exception.ArticleCreateException;
 import org.example.domain.exception.DeleteArticleException;
 import org.example.domain.exception.UpdateArticleException;
+import org.example.repository.base.ArticleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,5 +64,10 @@ public class InMemoryArticleRepository implements ArticleRepository {
         }
         articlesMap.remove(articleId);
         LOG.debug("Article deleted: {}", articleId);
+    }
+
+    @Override
+    public boolean isTrending(Article.ArticleId articleId) {
+        return false;
     }
 }

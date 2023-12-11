@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.controller.request.AddCommentToArticleRequest;
 import org.example.controller.request.ArticleCreateRequest;
@@ -11,6 +12,7 @@ import org.example.controller.response.ArticleCreateResponse;
 import org.example.controller.response.ArticleResponse;
 import org.example.controller.response.ArticleWithCommentsResponse;
 import org.example.controller.response.ErrorResponse;
+import org.example.controller.response.ListArticleCreateResponse;
 import org.example.domain.Article;
 import org.example.domain.Comment;
 import org.example.domain.exception.AddCommentToArticleException;
@@ -24,6 +26,11 @@ import org.example.service.ArticleService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.example.domain.Article.*;
 
 public class ArticleController implements Controller {
     private static final Logger LOG = LoggerFactory.getLogger(ArticleController.class);
@@ -46,6 +53,7 @@ public class ArticleController implements Controller {
         createArticle();
         addCommentToArticle();
         deleteComment();
+        createArticles();
     }
 
     private void allArticlesWithComments() {
@@ -66,7 +74,7 @@ public class ArticleController implements Controller {
     private void articleWithComments() {
         service.get("/api/articles/:articleId", (req, res) -> {
             res.type("application/json");
-            final var articleId = new Article.ArticleId(Long.parseLong(req.params("articleId")));
+            final var articleId = new ArticleId(Long.parseLong(req.params("articleId")));
             try {
                 final var article = articleService.findArticleById(articleId);
                 final var articleWithComments = articleService.findArticleWithComments(articleId);
@@ -172,7 +180,7 @@ public class ArticleController implements Controller {
             res.type("application/json");
             String articleIdParam = req.params(":articleId");
             String commentIdParam = req.params(":commentId");
-            final var articleId = new Article.ArticleId(Long.parseLong(articleIdParam));
+            final var articleId = new ArticleId(Long.parseLong(articleIdParam));
             try {
                 articleService.deleteCommentFromArticle(
                     articleId,
@@ -183,6 +191,31 @@ public class ArticleController implements Controller {
                 return objectMapper.writeValueAsString(new ArticleCreateResponse(articleId));
             } catch (DeleteCommentException exception) {
                 LOG.warn("Cannot deleted comment");
+                res.status(400);
+                return objectMapper.writeValueAsString(new ErrorResponse(exception.getMessage()));
+            }
+        });
+    }
+
+    private void createArticles() {
+        service.post("/api/articles/batch", (req, res) -> {
+            res.type("application/json");
+            List<ArticleCreateRequest> articles = objectMapper.readValue(req.body(), new TypeReference<>() {
+            });
+
+            try {
+                List<ArticleId> createdArticleIds = new ArrayList<>();
+                for (ArticleCreateRequest article : articles) {
+                    ArticleId articleId = articleService.createArticle(
+                        article.title(),
+                        article.tags()
+                    );
+                    createdArticleIds.add(articleId);
+                }
+                res.status(201);
+                return objectMapper.writeValueAsString(new ListArticleCreateResponse(createdArticleIds));
+            } catch (ArticleCreateException exception) {
+                LOG.warn("Cannot create articles");
                 res.status(400);
                 return objectMapper.writeValueAsString(new ErrorResponse(exception.getMessage()));
             }

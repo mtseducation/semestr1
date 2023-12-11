@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: myProject
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+
+  flyway:
+    image: flyway/flyway:latest
+    volumes:
+      - ../src/main/resources/db.migration:/flyway/sql
+    depends_on:
+      - postgres
+    command: ["migrate", "-url=jdbc:postgresql://postgres:5432/myProject", "-user=admin", "-password=admin"]

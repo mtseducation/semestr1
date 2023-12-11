@@ -1,0 +1,2 @@
+ALTER TABLE article
+ADD COLUMN trending BOOLEAN NOT NULL;

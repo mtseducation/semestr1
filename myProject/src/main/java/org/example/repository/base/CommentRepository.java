@@ -1,4 +1,4 @@
-package org.example.repository;
+package org.example.repository.base;
 
 import org.example.domain.Article;
 import org.example.domain.Comment;

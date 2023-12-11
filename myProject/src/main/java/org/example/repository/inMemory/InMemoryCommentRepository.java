@@ -1,9 +1,9 @@
-package org.example.repository;
+package org.example.repository.inMemory;
 
-import org.example.domain.Article;
 import org.example.domain.Comment;
 import org.example.domain.exception.AddCommentToArticleException;
 import org.example.domain.exception.DeleteCommentException;
+import org.example.repository.base.CommentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.example.domain.Article.*;
+import static org.example.domain.Article.ArticleId;
 import static org.example.domain.Comment.CommentId;
 
 public class InMemoryCommentRepository implements CommentRepository {
