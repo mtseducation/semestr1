@@ -21,7 +21,7 @@ public class Main {
         final var config = ConfigFactory.load();
         final var flyway = Flyway.configure()
                                .outOfOrder(true)
-                               .locations("classpath:db/migrations")
+                               .locations("classpath:db/migration")
                                .dataSource(config.getString("app.database.url"), config.getString("app.database.user"),
                                    config.getString("app.database.password"))
                                .load();

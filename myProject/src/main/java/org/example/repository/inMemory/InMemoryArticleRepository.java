@@ -20,8 +20,8 @@ public class InMemoryArticleRepository implements ArticleRepository {
     private final Map<Article.ArticleId, Article> articlesMap = new ConcurrentHashMap<>();
 
     @Override
-    public long generateId() {
-        return nextId.incrementAndGet();
+    public Article.ArticleId generateId() {
+        return new Article.ArticleId(nextId.incrementAndGet());
     }
 
     @Override

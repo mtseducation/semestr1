@@ -8,10 +8,10 @@ import org.jdbi.v3.core.Jdbi;
 
 import java.util.List;
 
-public class PostgresCommentRepository implements CommentRepository {
+public class DatabaseCommentRepository implements CommentRepository {
     private final Jdbi jdbi;
 
-    public PostgresCommentRepository(Jdbi jdbi) {
+    public DatabaseCommentRepository(Jdbi jdbi) {
         this.jdbi = jdbi;
     }
 
@@ -27,8 +27,8 @@ public class PostgresCommentRepository implements CommentRepository {
 
     @Override
     public int findCommentCountByArticleId(Article.ArticleId articleId) {
-        return jdbi.withHandle(handle -> handle.createQuery("SELECT COUNT(*) FROM comment WHERE article_id = ?")
-                                             .bind(0, articleId.value())
+        return jdbi.withHandle(handle -> handle.createQuery("SELECT COUNT(*) FROM comment WHERE article_id = :article_id")
+                                             .bind("article_id", articleId.value())
                                              .mapTo(Integer.class)
                                              .one()
         );
@@ -36,8 +36,8 @@ public class PostgresCommentRepository implements CommentRepository {
 
     @Override
     public List<Comment> findCommentsByArticleId(Article.ArticleId articleId) {
-        return jdbi.withHandle(handle -> handle.createQuery("SELECT * FROM comment WHERE article_id = ?")
-                                             .bind(0, articleId.value())
+        return jdbi.withHandle(handle -> handle.createQuery("SELECT * FROM comment WHERE article_id = :article_id")
+                                             .bind("article_id", articleId.value())
                                              .mapTo(Comment.class)
                                              .list()
         );
@@ -45,27 +45,29 @@ public class PostgresCommentRepository implements CommentRepository {
 
     @Override
     public void deleteCommentByArticleId(Article.ArticleId articleId, Comment.CommentId commentId) {
-        jdbi.useTransaction(handle -> handle.createUpdate("DELETE FROM comment WHERE article_id = ? AND id = ?")
-                                     .bind(0, articleId.value())
-                                     .bind(1, commentId.value())
+        jdbi.useTransaction(handle -> handle.createUpdate("DELETE FROM comment WHERE article_id = :article_id " +
+                                                              "AND id = :id")
+                                     .bind("article_id", articleId.value())
+                                     .bind("id", commentId.value())
                                      .execute()
         );
     }
 
     @Override
     public void deleteComment(Comment.CommentId commentId) {
-        jdbi.useTransaction(handle -> handle.createUpdate("DELETE FROM comment WHERE id = ?")
-                                     .bind(0, commentId.value())
+        jdbi.useTransaction(handle -> handle.createUpdate("DELETE FROM comment WHERE id = :id")
+                                     .bind("id", commentId.value())
                                      .execute()
         );
     }
 
     @Override
     public void createComment(Comment comment) {
-        jdbi.useTransaction(handle -> handle.createUpdate("INSERT INTO comment (id, article_id, text) VALUES (?, ?, ?)")
-                                     .bind(0, comment.getCommentId().value())
-                                     .bind(1, comment.getArticleId().value())
-                                     .bind(2, comment.getText())
+        jdbi.useTransaction(handle -> handle.createUpdate("INSERT INTO comment (id, article_id, text)" +
+                                                              " VALUES (:id, :article_id, :text)")
+                                     .bind("id", comment.getCommentId().value())
+                                     .bind("article_id", comment.getArticleId().value())
+                                     .bind("text", comment.getText())
                                      .execute()
         );
     }

@@ -23,6 +23,14 @@ public class Article {
         this.trending = isTrending();
     }
 
+    public Article(ArticleId articleId, String title, Set<String> tags, List<Comment> commentList, boolean trending) {
+        this.articleId = articleId;
+        this.title = title;
+        this.tags = tags;
+        this.commentList = commentList;
+        this.trending = trending;
+    }
+
     public Article withTitle(String title) {
         return new Article(this.articleId, title, this.tags, this.commentList);
     }

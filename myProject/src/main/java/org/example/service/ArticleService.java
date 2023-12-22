@@ -14,6 +14,7 @@ import org.example.domain.exception.UpdateArticleException;
 import org.example.repository.base.ArticleRepository;
 import org.example.repository.base.CommentRepository;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,11 +56,11 @@ public class ArticleService {
         }
     }
 
-    public Article findArticleById(ArticleId articleId) {
+    public Article findArticleById(ArticleId articleId) throws SQLException {
         return articleRepository.findArticleById(articleId);
     }
 
-    public List<Comment> findArticleWithComments(ArticleId articleId) {
+    public List<Comment> findArticleWithComments(ArticleId articleId) throws SQLException {
         final var article = articleRepository.findArticleById(articleId);
         if (article != null) {
             return commentRepository.findCommentsByArticleId(article.getArticleId());
@@ -68,7 +69,7 @@ public class ArticleService {
         }
     }
 
-    public Article updateArticle(ArticleId articleId, String title, Set<String> tags) {
+    public Article updateArticle(ArticleId articleId, String title, Set<String> tags) throws SQLException {
         final var existingArticle = articleRepository.findArticleById(articleId);
         try {
             existingArticle.setTitle(title);
@@ -90,7 +91,7 @@ public class ArticleService {
 
     public ArticleId createArticle(String title, Set<String> tags) {
         try {
-            final var articleId = new ArticleId(articleRepository.generateId());
+            final var articleId = articleRepository.generateId();
             final var article = new Article(articleId, title, tags, emptyList());
             articleRepository.createArticle(article);
             return articleId;
@@ -108,6 +109,8 @@ public class ArticleService {
             article.setCommentList(List.of(comment));
         } catch (ArticleCreateException exception) {
             throw new AddCommentToArticleException("Cannot find article by id", exception.getCause());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
